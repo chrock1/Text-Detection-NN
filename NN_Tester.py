@@ -33,21 +33,31 @@ print("Model loaded successfully!")
 # Step 10: Test the Model with 10 Random Samples and Display them in One Plot
 # Function to predict and plot random samples
 def predict_and_plot_random_samples(model, X_test, y_test, num_samples=10):
+    # Randomly select 10 indices from the test dataset
     random_indices = sample(range(X_test.shape[0]), num_samples)
     random_images = X_test[random_indices]
     random_labels = y_test[random_indices]
 
     plt.figure(figsize=(15, 5))
     for i, (image, label) in enumerate(zip(random_images, random_labels)):
-        # Preprocess image for prediction
+        # Ensure image is preprocessed correctly (normalized and reshaped)
         image_processed = image.reshape(1, 28, 28, 1).astype('float32') / 255.0
+        
+        # Debugging: Print shape and type information
+        print(f"Input image shape: {image_processed.shape}, dtype: {image_processed.dtype}")
+
+        # Get the prediction from the model
         prediction = model.predict(image_processed)
-
-        # Ensure that prediction is 2D (batch_size, num_classes)
-        predicted_class = tf.argmax(prediction[0]).numpy()  # Corrected
-
-        # Handle one-hot encoded true label
+        
+        # Debugging: Print prediction details
+        print(f"Raw prediction output: {prediction}")
+        
+        # Extract the predicted class using argmax
+        predicted_class = tf.argmax(prediction[0]).numpy()
         true_class = tf.argmax(label).numpy()
+
+        # Debugging: Print predicted and true classes
+        print(f"Predicted class: {predicted_class}, True class: {true_class}")
 
         # Plot the image and prediction
         plt.subplot(2, 5, i + 1)
