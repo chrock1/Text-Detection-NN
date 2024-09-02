@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from random import sample
 
 # Step 1: Pin GPU Memory
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -74,7 +75,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Step 7: Implement Early Stopping
-early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=3, restore_best_weights=True)
 
 # Step 8: Train the Model
 history = model.fit(train_dataset, epochs=50, validation_data=test_dataset, callbacks=[early_stopping])
@@ -85,3 +86,31 @@ print(f'Test accuracy: {test_accuracy * 100:.2f}%')
 
 model.save('emnist_trained_model.h5')
 print("Model saved successfully!")
+
+# Step 10: Load the Saved Model for Future Use
+loaded_model = tf.keras.models.load_model('emnist_trained_model.h5')
+print("Model loaded successfully!")
+
+# Step 11: Define the Function to Test Random Samples
+def predict_and_plot_random_samples(model, X_test, y_test, num_samples=10):
+    random_indices = sample(range(X_test.shape[0]), num_samples)
+    random_images = X_test[random_indices]
+    random_labels = y_test[random_indices]
+
+    plt.figure(figsize=(15, 5))
+    for i, (image, label) in enumerate(zip(random_images, random_labels)):
+        image_processed = image.reshape(1, 28, 28, 1).astype('float32') / 255.0
+        prediction = model.predict(image_processed)
+        predicted_class = tf.argmax(prediction[0]).numpy()
+        true_class = tf.argmax(label).numpy()
+
+        plt.subplot(2, 5, i + 1)
+        plt.imshow(image.reshape(28, 28), cmap='gray')
+        plt.title(f'True: {chr(true_class + 65)}\nPred: {chr(predicted_class + 65)}')
+        plt.axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+# Call the function to test 10 random samples and display them
+predict_and_plot_random_samples(loaded_model, X_test, y_test, num_samples=10)
