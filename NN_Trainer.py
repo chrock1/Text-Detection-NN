@@ -28,12 +28,13 @@ y_test -= 1
 y_train = tf.keras.utils.to_categorical(y_train, num_classes=26)
 y_test = tf.keras.utils.to_categorical(y_test, num_classes=26)
 
-# Step 4: Optimize Data Pipeline with Correct Caching Order
-batch_size = 1024  # Larger batch size to utilize GPU memory better
+# Step 4: Optimize Data Pipeline with Enhanced Data Augmentation
+batch_size = 256  # Smaller batch size to introduce more noise during training
 augmenter = tf.keras.Sequential([
     tf.keras.layers.RandomFlip("horizontal"),
-    tf.keras.layers.RandomRotation(0.1),
-    tf.keras.layers.RandomZoom(0.1),
+    tf.keras.layers.RandomRotation(0.2),
+    tf.keras.layers.RandomZoom(0.2),
+    tf.keras.layers.RandomContrast(0.2),
 ])
 
 def preprocess(image, label):
@@ -48,47 +49,39 @@ train_dataset = train_dataset.map(preprocess).shuffle(10000).batch(batch_size).c
 test_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
 test_dataset = test_dataset.batch(batch_size).cache().prefetch(tf.data.AUTOTUNE)
 
-# Step 5: Define a Deeper Neural Network Model (ResNet-like)
+# Step 5: Define a Simpler Neural Network Model with Stronger Regularization
 model = tf.keras.Sequential([
     tf.keras.layers.Conv2D(64, (3, 3), activation='relu', input_shape=(28, 28, 1)),
     tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
-    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dropout(0.5),  # Increase dropout rate
 
     tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
     tf.keras.layers.BatchNormalization(),
     tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
-    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dropout(0.5),  # Increase dropout rate
 
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dense(256, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),  # L2 Regularization
     tf.keras.layers.Dropout(0.5),
     tf.keras.layers.Dense(26, activation='softmax')
 ])
 
 # Step 6: Compile the Model
-optimizer = tf.keras.optimizers.Adam()
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
-# Step 7: Train the Model
-history = model.fit(train_dataset, epochs=20, validation_data=test_dataset)
+# Step 7: Implement Early Stopping
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True)
 
-# Step 8: Evaluate the Model
+# Step 8: Train the Model
+history = model.fit(train_dataset, epochs=50, validation_data=test_dataset, callbacks=[early_stopping])
+
+# Step 9: Evaluate the Model
 test_loss, test_accuracy = model.evaluate(test_dataset)
 print(f'Test accuracy: {test_accuracy * 100:.2f}%')
 
-# Step 9: Test the Model with New Data and Display the Image
-def predict_letter(model, image):
-    image_processed = image.reshape(1, 28, 28, 1).astype('float32') / 255.0
-    prediction = model.predict(image_processed)
-    predicted_class = tf.argmax(prediction[0]).numpy()
-    print(f'Predicted letter: {chr(predicted_class + 65)}')
-    plt.imshow(image.reshape(28, 28), cmap='gray')
-    plt.title(f'Predicted: {chr(predicted_class + 65)}')
-    plt.axis('off')
-    plt.show()
-
-# Example: Using an image from the test dataset
-predict_letter(model, X_test[0])
+model.save('emnist_trained_model.h5')
+print("Model saved successfully!")
