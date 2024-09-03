@@ -19,10 +19,23 @@ set_global_policy('mixed_float16')
 data = np.load('emnist_letters.npz')
 
 # Extract the training and testing datasets
+def rotate_and_flip(image):
+    # Rotate the image 90 degrees clockwise
+    rotated_image = np.rot90(image, k=3)  # Rotate 90 degrees clockwise (equivalent to counter-clockwise three times)
+    
+    # Flip the image horizontally
+    flipped_image = np.fliplr(rotated_image)
+    
+    return flipped_image
+
+
 X_train = data['X_train']
 y_train = data['y_train']
 X_test = data['X_test']
 y_test = data['y_test']
+
+X_train_rotated_flipped = np.array([rotate_and_flip(img) for img in X_train])
+X_test_rotated_flipped = np.array([rotate_and_flip(img) for img in X_test])
 
 # Adjust labels from [1, 26] to [0, 25]
 y_train -= 1
@@ -45,22 +58,23 @@ class_weight_dict = dict(enumerate(class_weights))
 # Step 4: Optimize Data Pipeline with Enhanced Data Augmentation
 batch_size = 264  # Smaller batch size to introduce more noise during training
 augmenter = tf.keras.Sequential([
-    tf.keras.layers.RandomFlip("horizontal")
-    # tf.keras.layers.RandomRotation(0.3),
-    # tf.keras.layers.RandomZoom(0.3),
-    # tf.keras.layers.RandomContrast(0.3),
-    # tf.keras.layers.RandomTranslation(0.2, 0.2)
+    tf.keras.layers.RandomFlip("horizontal"),
+    tf.keras.layers.RandomRotation(0.3),
+    tf.keras.layers.RandomZoom(0.3),
+    tf.keras.layers.RandomContrast(0.3),
+    tf.keras.layers.RandomTranslation(0.2, 0.2)
 ])
 
 def preprocess(image, label):
     # Apply data augmentation
-    image = augmenter(image)
+    # image = augmenter(image)
+    image = image
     return image, label
 
-train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+train_dataset = tf.data.Dataset.from_tensor_slices((X_train_rotated_flipped, y_train))
 train_dataset = train_dataset.map(preprocess).shuffle(10000).batch(batch_size).cache().prefetch(tf.data.AUTOTUNE)
 
-test_dataset = tf.data.Dataset.from_tensor_slices((X_test, y_test))
+test_dataset = tf.data.Dataset.from_tensor_slices((X_test_rotated_flipped, y_test))
 test_dataset = test_dataset.batch(batch_size).cache().prefetch(tf.data.AUTOTUNE)
 
 class GradientLoggingCallback(tf.keras.callbacks.Callback):
@@ -202,4 +216,4 @@ def predict_and_plot_random_samples(model, X_test, y_test, num_samples=10):
 
 # Example usage after training or loading the model
 # Ensure your model is defined and trained or loaded before calling this function
-predict_and_plot_random_samples(model, X_test, y_test, num_samples=10)
+predict_and_plot_random_samples(model, X_test_rotated_flipped, y_test, num_samples=10)
