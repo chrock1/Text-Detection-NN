@@ -30,6 +30,7 @@ y_train = tf.keras.utils.to_categorical(y_train, num_classes=26)
 y_test = tf.keras.utils.to_categorical(y_test, num_classes=26)
 loaded_model = tf.keras.models.load_model('emnist_trained_model.h5')
 print("Model loaded successfully!")
+
 # Step 10: Test the Model with 10 Random Samples and Display them in One Plot
 # Function to predict and plot random samples
 def predict_and_plot_random_samples(model, X_test, y_test, num_samples=10):
