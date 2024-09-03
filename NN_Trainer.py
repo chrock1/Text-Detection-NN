@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from random import sample
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, LearningRateScheduler
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, LearningRateScheduler, ReduceLROnPlateau
 from datetime import datetime
 from sklearn.utils import class_weight
 
@@ -43,13 +43,13 @@ class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(
 class_weight_dict = dict(enumerate(class_weights))
 
 # Step 4: Optimize Data Pipeline with Enhanced Data Augmentation
-batch_size = 1024  # Smaller batch size to introduce more noise during training
+batch_size = 264  # Smaller batch size to introduce more noise during training
 augmenter = tf.keras.Sequential([
-    tf.keras.layers.RandomFlip("horizontal"),
-    tf.keras.layers.RandomRotation(0.3),
-    tf.keras.layers.RandomZoom(0.3),
-    tf.keras.layers.RandomContrast(0.3),
-    tf.keras.layers.RandomTranslation(0.2, 0.2)
+    tf.keras.layers.RandomFlip("horizontal")
+    # tf.keras.layers.RandomRotation(0.3),
+    # tf.keras.layers.RandomZoom(0.3),
+    # tf.keras.layers.RandomContrast(0.3),
+    # tf.keras.layers.RandomTranslation(0.2, 0.2)
 ])
 
 def preprocess(image, label):
@@ -100,49 +100,54 @@ gradient_callback = GradientLoggingCallback(log_dir, train_dataset)
 
 # Step 5: Define a Model with Stronger Regularization
 model = tf.keras.Sequential([
-    tf.keras.layers.Conv2D(128, (3, 3), activation='selu', kernel_initializer='lecun_normal', input_shape=(28, 28, 1)),
-    tf.keras.layers.Conv2D(128, (3, 3), activation='selu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='lecun_normal', input_shape=(28, 28, 1)),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='lecun_normal'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),  # Dropout works well with SELU to induce self-normalizing properties
 
-    tf.keras.layers.Conv2D(256, (3, 3), activation='selu', kernel_initializer='lecun_normal'),
-    tf.keras.layers.Conv2D(256, (3, 3), activation='selu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer='lecun_normal'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
 
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation='selu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Dense(512, activation='relu', kernel_initializer='lecun_normal'),
     tf.keras.layers.Dropout(0.3),
     tf.keras.layers.Dense(26, activation='softmax')
 ])
 
 # Step 6: Compile the Model with an Initial Learning Rate
-initial_learning_rate = 0.0001
+initial_learning_rate = 0.00001
 optimizer = tf.keras.optimizers.SGD(learning_rate=initial_learning_rate,momentum=0.9, nesterov=True)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Step 7: Implement Early Stopping and TensorBoard for Monitoring
-early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
+early_stopping = EarlyStopping(monitor='val_accuracy', patience=10, restore_best_weights=True)
 log_dir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 # Step 8: Define the Learning Rate Scheduler
-def scheduler(epoch, lr):
-    # Reduce the learning rate by a factor every 10 epochs
+def lr_schedule(epoch, lr):
     if epoch < 10:
         return lr
+    elif epoch < 20:
+        return lr * 0.5  # Reduce LR by half after 10 epochs
+    elif epoch < 30:
+        return lr * 0.1  # Further reduce after 20 epochs
     else:
-        return lr * tf.math.exp(-0.1)
+        return lr * 0.01  # Further reduce after 30 epochs
 
-lr_schedule_callback = LearningRateScheduler(scheduler)
+lr_schedule_callback = LearningRateScheduler(lr_schedule)
+
+reduce_lr_callback = ReduceLROnPlateau(monitor='val_accuracy', factor=0.1, patience=3, min_lr=1e-8, verbose=1)
 
 # Step 9: Train the Model with the Learning Rate Scheduler
 history = model.fit(
     train_dataset, 
-    epochs=50,  # Increase the number of epochs
+    epochs=100,  # Increase the number of epochs
     validation_data=test_dataset, 
     class_weight=class_weight_dict,  # Add class weights
-    callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback,gradient_callback]  # Include the LR scheduler
+    callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback,gradient_callback,reduce_lr_callback]  # Include the LR scheduler
 )
 
 # Step 10: Save the Trained Model
