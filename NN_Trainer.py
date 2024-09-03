@@ -56,7 +56,7 @@ class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(
 class_weight_dict = dict(enumerate(class_weights))
 
 # Step 4: Optimize Data Pipeline with Enhanced Data Augmentation
-batch_size = 64  # Smaller batch size to introduce more noise during training
+batch_size = 32  # Smaller batch size to introduce more noise during training
 augmenter = tf.keras.Sequential([
     tf.keras.layers.RandomFlip("horizontal"),
     tf.keras.layers.RandomRotation(0.3),

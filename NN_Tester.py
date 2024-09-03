@@ -15,11 +15,23 @@ set_global_policy('mixed_float16')
 # Step 3: Load the saved dataset
 data = np.load('emnist_letters.npz')
 
-# Extract the training and testing datasets
+def rotate_and_flip(image):
+    # Rotate the image 90 degrees clockwise
+    rotated_image = np.rot90(image, k=3)  # Rotate 90 degrees clockwise (equivalent to counter-clockwise three times)
+    
+    # Flip the image horizontally
+    flipped_image = np.fliplr(rotated_image)
+    
+    return flipped_image
+
+
 X_train = data['X_train']
 y_train = data['y_train']
 X_test = data['X_test']
 y_test = data['y_test']
+
+X_train_rotated_flipped = np.array([rotate_and_flip(img) for img in X_train])
+X_test_rotated_flipped = np.array([rotate_and_flip(img) for img in X_test])
 
 # Adjust labels from [1, 26] to [0, 25]
 y_train -= 1
@@ -71,4 +83,4 @@ def predict_and_plot_random_samples(model, X_test, y_test, num_samples=10):
 
 # Example usage after training or loading the model
 # Ensure your model is defined and trained or loaded before calling this function
-predict_and_plot_random_samples(loaded_model, X_test, y_test, num_samples=10)
+predict_and_plot_random_samples(loaded_model, X_test_rotated_flipped, y_test, num_samples=10)
