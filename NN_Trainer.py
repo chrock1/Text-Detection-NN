@@ -114,18 +114,18 @@ gradient_callback = GradientLoggingCallback(log_dir, train_dataset)
 
 # Step 5: Define a Model with Stronger Regularization
 model = tf.keras.Sequential([
-    tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='lecun_normal', input_shape=(28, 28, 1)),
-    tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='selu', kernel_initializer='lecun_normal', input_shape=(28, 28, 1)),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='selu', kernel_initializer='lecun_normal'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),  # Dropout works well with SELU to induce self-normalizing properties
 
-    tf.keras.layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer='lecun_normal'),
-    tf.keras.layers.Conv2D(256, (3, 3), activation='relu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='selu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='selu', kernel_initializer='lecun_normal'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
 
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation='relu', kernel_initializer='lecun_normal'),
+    tf.keras.layers.Dense(512, activation='selu', kernel_initializer='lecun_normal'),
     tf.keras.layers.Dropout(0.3),
     tf.keras.layers.Dense(26, activation='softmax')
 ])
