@@ -56,7 +56,7 @@ class_weights = class_weight.compute_class_weight('balanced', classes=np.unique(
 class_weight_dict = dict(enumerate(class_weights))
 
 # Step 4: Optimize Data Pipeline with Enhanced Data Augmentation
-batch_size = 32  # Smaller batch size to introduce more noise during training
+batch_size = 8  # Smaller batch size to introduce more noise during training
 augmenter = tf.keras.Sequential([
     tf.keras.layers.RandomFlip("horizontal"),
     tf.keras.layers.RandomRotation(0.3),
@@ -130,6 +130,9 @@ model = tf.keras.Sequential([
     tf.keras.layers.Dense(26, activation='softmax')
 ])
 
+# model = tf.keras.models.load_model('emnist_trained_model.h5')
+# print("Model loaded successfully!")
+
 # Step 6: Compile the Model with an Initial Learning Rate
 initial_learning_rate = 0.00001
 optimizer = tf.keras.optimizers.SGD(learning_rate=initial_learning_rate,momentum=0.9, nesterov=True)
@@ -161,7 +164,7 @@ history = model.fit(
     epochs=100,  # Increase the number of epochs
     validation_data=test_dataset, 
     class_weight=class_weight_dict,  # Add class weights
-    callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback,gradient_callback,reduce_lr_callback]  # Include the LR scheduler
+    callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback, gradient_callback, reduce_lr_callback]  # Include the LR scheduler
 )
 
 # Step 10: Save the Trained Model
@@ -173,9 +176,6 @@ print("Model saved successfully!")
 test_loss, test_accuracy = model.evaluate(test_dataset)
 print(f'Test accuracy: {test_accuracy * 100:.2f}%')
 
-# Step 10: Save the Trained Model
-model.save('emnist_trained_model.h5')
-print("Model saved successfully!")
 
 def predict_and_plot_random_samples(model, X_test, y_test, num_samples=10):
     # Randomly select 10 indices from the test dataset
