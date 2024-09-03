@@ -11,16 +11,6 @@ DATA_PATH = os.path.join(current_directory,'Data','emnist_letters.npz')
 MODEL_PATH = os.path.join(current_directory, 'Models','emnist_trained_model.h5')
 AUGMENT = False
 
-#Pin GPU Memory
-physical_devices = tf.config.list_physical_devices('GPU')
-for device in physical_devices:
-    tf.config.experimental.set_memory_growth(device, True)
-
-#Enable Mixed Precision Training
-from tensorflow.keras.mixed_precision import set_global_policy
-set_global_policy('mixed_float16')
-
-
 def data_path(file_name):
 
     path = os.path.join(current_directory, 'Data',file_name)
