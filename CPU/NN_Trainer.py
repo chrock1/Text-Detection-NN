@@ -1,9 +1,9 @@
 import os
 
-# Ensure threading settings are configured before any TensorFlow operation
-os.environ["OMP_NUM_THREADS"] = "4"  # Set the number of OpenMP threads
-os.environ["TF_NUM_INTRAOP_THREADS"] = "4"  # Set the number of intra-op parallelism threads
-os.environ["TF_NUM_INTEROP_THREADS"] = "2"  # Set the number of inter-op parallelism threads
+# Set environment variables for threading
+os.environ["OMP_NUM_THREADS"] = "24"  # Use 24 threads for OpenMP (double the number of physical cores if SMT is enabled)
+os.environ["TF_NUM_INTRAOP_THREADS"] = "12"  # Set intra-op parallelism to 12 (equal to the number of physical cores)
+os.environ["TF_NUM_INTEROP_THREADS"] = "2"  # Set inter-op parallelism to 2 for optimal between-operations threading
 
 import numpy as np
 import tensorflow as tf
@@ -13,9 +13,9 @@ from sklearn.utils.class_weight import compute_class_weight
 from Header import NN_func
 
 # Optionally, disable eager execution for faster graph mode execution
-# tf.compat.v1.disable_eager_execution()
+#tf.compat.v1.disable_eager_execution()
 
-BATCH_NUM = 32  # Adjust batch size for CPU optimization
+BATCH_NUM = 64  # Increase batch size to make better use of CPU resources
 
 # Load dataset
 data = np.load(NN_func.data_path('emnist_letters.npz'))
@@ -24,6 +24,7 @@ y_train = data['y_train']
 X_test = data['X_test']
 y_test = data['y_test']
 
+# Apply preprocessing functions from NN_func
 X_train_rotated_flipped = np.array([NN_func.rotate_and_flip(img) for img in X_train])
 X_test_rotated_flipped = np.array([NN_func.rotate_and_flip(img) for img in X_test])
 
@@ -36,22 +37,29 @@ y_test = tf.keras.utils.to_categorical(y_test, num_classes=26)
 class_weights = compute_class_weight('balanced', classes=np.unique(np.argmax(y_train, axis=1)), y=np.argmax(y_train, axis=1))
 class_weight_dict = dict(enumerate(class_weights))
 
+# Optimize data pipeline
 train_dataset = tf.data.Dataset.from_tensor_slices((X_train_rotated_flipped, y_train))
-train_dataset = train_dataset.map(NN_func.preprocess, num_parallel_calls=tf.data.AUTOTUNE).shuffle(10000).batch(BATCH_NUM).cache().prefetch(tf.data.AUTOTUNE)
+train_dataset = train_dataset.map(NN_func.preprocess, num_parallel_calls=tf.data.AUTOTUNE) \
+                             .shuffle(10000) \
+                             .batch(BATCH_NUM) \
+                             .cache() \
+                             .prefetch(tf.data.AUTOTUNE)
+
 test_dataset = tf.data.Dataset.from_tensor_slices((X_test_rotated_flipped, y_test))
 test_dataset = test_dataset.batch(BATCH_NUM).cache().prefetch(tf.data.AUTOTUNE)
 
 log_dir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
-gradient_callback = NN_func.GradientLoggingCallback(log_dir, train_dataset)
+# gradient_callback = NN_func.GradientLoggingCallback(log_dir, train_dataset)
 
+# Define a more efficient model using standard convolutions
 model = tf.keras.Sequential([
-    tf.keras.layers.SeparableConv2D(128, (3, 3), activation='relu', input_shape=(28, 28, 1)),
-    tf.keras.layers.SeparableConv2D(128, (3, 3), activation='relu'),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
-    tf.keras.layers.SeparableConv2D(256, (3, 3), activation='relu'),
-    tf.keras.layers.SeparableConv2D(256, (3, 3), activation='relu'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
     tf.keras.layers.Flatten(),
@@ -69,10 +77,10 @@ reduce_lr_callback = ReduceLROnPlateau(monitor='val_accuracy', factor=0.1, patie
 
 history = model.fit(
     train_dataset,
-    epochs=100,
+    epochs=10,
     validation_data=test_dataset,
     class_weight=class_weight_dict,
-    callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback, gradient_callback, reduce_lr_callback]
+    callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback, reduce_lr_callback] #gradient_callback,
 )
 
 model.save(NN_func.model_path('emnist_trained_model.h5'))

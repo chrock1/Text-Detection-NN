@@ -84,32 +84,33 @@ def predict_and_plot_random_samples(model, X_test, y_test, num_samples=10):
     plt.tight_layout()
     plt.show()
 
-class GradientLoggingCallback(tf.keras.callbacks.Callback):
-    def __init__(self, log_dir, train_data):
-        super(GradientLoggingCallback, self).__init__()
-        self.file_writer = tf.summary.create_file_writer(log_dir)
-        self.train_data = train_data  # Save the training data for gradient computation
+# class GradientLoggingCallback(tf.keras.callbacks.Callback):
+#     def __init__(self, log_dir, train_data):
+#         super(GradientLoggingCallback, self).__init__()
+#         self.file_writer = tf.summary.create_file_writer(log_dir)
+#         self.train_data = train_data  # Save the training data for gradient computation
 
-    def on_epoch_end(self, epoch, logs=None):
-        # Get a batch of data to compute gradients
-        x_batch, y_batch = next(iter(self.train_data))
+#     def on_epoch_end(self, epoch, logs=None):
+#         # Get a batch of data to compute gradients
+#         x_batch, y_batch = next(iter(self.train_data))
 
-        with tf.GradientTape() as tape:
-            # Watch the trainable weights
-            tape.watch(self.model.trainable_weights)
+#         # Open a GradientTape context to watch the trainable weights
+#         with tf.GradientTape() as tape:
+#             # Watch the trainable weights of the model (convert to tf.Variable objects)
+#             tape.watch(self.model.trainable_variables)
             
-            # Make a forward pass through the model
-            y_pred = self.model(x_batch, training=True)
+#             # Make a forward pass through the model
+#             y_pred = self.model(x_batch, training=True)
 
-            # Compute the loss
-            loss = self.model.compiled_loss(y_batch, y_pred)
+#             # Compute the loss
+#             loss = self.model.compiled_loss(y_batch, y_pred)
 
-        # Compute the gradients with respect to the trainable weights
-        gradients = tape.gradient(loss, self.model.trainable_weights)
+#         # Compute the gradients with respect to the trainable weights
+#         gradients = tape.gradient(loss, self.model.trainable_variables)
 
-        # Log gradients to TensorBoard
-        with self.file_writer.as_default():
-            for weight, grad in zip(self.model.trainable_weights, gradients):
-                if grad is not None:
-                    tf.summary.histogram(f'{weight.name}/gradients', grad, step=epoch)
-        self.file_writer.flush()
+#         # Log gradients to TensorBoard
+#         with self.file_writer.as_default():
+#             for weight, grad in zip(self.model.trainable_variables, gradients):
+#                 if grad is not None:
+#                     tf.summary.histogram(f'{weight.name}/gradients', grad, step=epoch)
+#         self.file_writer.flush()
