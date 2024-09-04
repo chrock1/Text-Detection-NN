@@ -30,14 +30,17 @@ def model_path(file_name):
     path = os.path.join(current_directory, 'Models',file_name)
     return path
 
-def rotate_and_flip(image):
+def rotate_flip_normalize(image):
     # Rotate the image 90 degrees clockwise
     rotated_image = np.rot90(image, k=3)  # Rotate 90 degrees clockwise (equivalent to counter-clockwise three times)
     
     # Flip the image horizontally
     flipped_image = np.fliplr(rotated_image)
+
+    # Normalize the images by scaling pixel values to [0, 1]
+    normalized_image = flipped_image.astype('float32') / 255.0
     
-    return flipped_image
+    return normalized_image
 
 
 augmenter = tf.keras.Sequential([

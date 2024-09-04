@@ -5,7 +5,7 @@ from datetime import datetime
 from sklearn.utils import class_weight
 from Header import NN_func
 
-BATCH_NUM = 2
+BATCH_NUM = 64
 
 # Step 3: Load the saved dataset
 data = np.load(NN_func.data_path('emnist_letters.npz'))
@@ -16,8 +16,8 @@ y_train = data['y_train']
 X_test = data['X_test']
 y_test = data['y_test']
 
-X_train_rotated_flipped = np.array([NN_func.rotate_and_flip(img) for img in X_train])
-X_test_rotated_flipped = np.array([NN_func.rotate_and_flip(img) for img in X_test])
+X_train_rotated_flipped = np.array([NN_func.rotate_flip_normalize(img) for img in X_train])
+X_test_rotated_flipped = np.array([NN_func.rotate_flip_normalize(img) for img in X_test])
 
 # Adjust labels from [1, 26] to [0, 25]
 y_train -= 1

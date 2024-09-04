@@ -25,8 +25,8 @@ X_test = data['X_test']
 y_test = data['y_test']
 
 # Apply preprocessing functions from NN_func
-X_train_rotated_flipped = np.array([NN_func.rotate_and_flip(img) for img in X_train])
-X_test_rotated_flipped = np.array([NN_func.rotate_and_flip(img) for img in X_test])
+X_train_rotated_flipped = np.array([NN_func.rotate_flip_normalize(img) for img in X_train])
+X_test_rotated_flipped = np.array([NN_func.rotate_flip_normalize(img) for img in X_test])
 
 y_train -= 1
 y_test -= 1
@@ -54,16 +54,16 @@ tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 # Define a more efficient model using standard convolutions
 model = tf.keras.Sequential([
-    tf.keras.layers.Conv2D(128, (3, 3), activation='relu', input_shape=(28, 28, 1)),
-    tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='selu', input_shape=(28, 28, 1)),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='selu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
-    tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
-    tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='selu'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='selu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dense(512, activation='selu'),
     tf.keras.layers.Dropout(0.3),
     tf.keras.layers.Dense(26, activation='softmax')
 ])
@@ -77,7 +77,7 @@ reduce_lr_callback = ReduceLROnPlateau(monitor='val_accuracy', factor=0.1, patie
 
 history = model.fit(
     train_dataset,
-    epochs=10,
+    epochs=100,
     validation_data=test_dataset,
     class_weight=class_weight_dict,
     callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback, reduce_lr_callback] #gradient_callback,
