@@ -23,7 +23,7 @@ y_test -= 1
 y_train = tf.keras.utils.to_categorical(y_train, num_classes=26)
 y_test = tf.keras.utils.to_categorical(y_test, num_classes=26)
 
-loaded_model = tf.keras.models.load_model(NN_func.model_path('emnist_trained_model.h5'))
+loaded_model = tf.keras.models.load_model(NN_func.model_path('emnist_trained_model.keras'))
 print("Model loaded successfully!")
 
 # Step 10: Test the Model with 10 Random Samples and Display them in One Plot

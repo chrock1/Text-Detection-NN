@@ -54,16 +54,16 @@ tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 # Define a more efficient model using standard convolutions
 model = tf.keras.Sequential([
-    tf.keras.layers.Conv2D(128, (3, 3), activation='selu', input_shape=(28, 28, 1)),
-    tf.keras.layers.Conv2D(128, (3, 3), activation='selu'),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+    tf.keras.layers.Conv2D(128, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
-    tf.keras.layers.Conv2D(256, (3, 3), activation='selu'),
-    tf.keras.layers.Conv2D(256, (3, 3), activation='selu'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
+    tf.keras.layers.Conv2D(256, (3, 3), activation='relu'),
     tf.keras.layers.MaxPooling2D((2, 2)),
     tf.keras.layers.Dropout(0.3),
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation='selu'),
+    tf.keras.layers.Dense(512, activation='relu'),
     tf.keras.layers.Dropout(0.3),
     tf.keras.layers.Dense(26, activation='softmax')
 ])
@@ -83,7 +83,7 @@ history = model.fit(
     callbacks=[early_stopping, tensorboard_callback, lr_schedule_callback, reduce_lr_callback] #gradient_callback,
 )
 
-model.save(NN_func.model_path('emnist_trained_model.h5'))
+model.save(NN_func.model_path('emnist_trained_model.keras'))
 test_loss, test_accuracy = model.evaluate(test_dataset)
 print(f'Test accuracy: {test_accuracy * 100:.2f}%')
 NN_func.predict_and_plot_random_samples(model, X_test_rotated_flipped, y_test, num_samples=10)
