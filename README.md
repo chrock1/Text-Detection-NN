@@ -13,3 +13,11 @@ Follow tensorflow instruction here : https://www.tensorflow.org/install/pip?hl=e
 
 VS code can change python interpreter using cntl+shift+p 
 Then look up 'Python: Select Interpreter'
+
+There are 3 main folders in this structure.
+
+CPU and GPU are the programs I wrote that trained the Nueral Network using the CPU and GPU respectively.
+
+Drawing and Guessing has a python program called main.py. If you run this program you will see a window pop up
+where you can draw a letter using your mouse. Clicking the predict button will let the model take a guess at your
+letter.
